@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CarIngest.Api/CarIngest.Api.csproj" />
+    <Project Path="src/CarIngest.Core/CarIngest.Core.csproj" />
+    <Project Path="src/CarIngest.Infrastructure/CarIngest.Infrastructure.csproj" />
+    <Project Path="src/CarIngest.Robots/CarIngest.Robots.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CarIngest.Api.Tests/CarIngest.Api.Tests.csproj" />
+    <Project Path="tests/CarIngest.Core.Tests/CarIngest.Core.Tests.csproj" />
+    <Project Path="tests/CarIngest.Infrastructure.Tests/CarIngest.Infrastructure.Tests.csproj" />
+    <Project Path="tests/CarIngest.Robots.Tests/CarIngest.Robots.Tests.csproj" />
+  </Folder>
+</Solution>

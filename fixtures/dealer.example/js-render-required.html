@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="en-GB">
+<head><title>Loading… — Dealer Example</title></head>
+<body>
+  <div id="listing-root"></div>
+  <noscript>This listing requires JavaScript to view.</noscript>
+  <script>
+    window.__LISTING__ = { make: "Audi", model: "A4", year: 2017 };
+    document.getElementById("listing-root").textContent = "hydrated client-side";
+  </script>
+</body>
+</html>

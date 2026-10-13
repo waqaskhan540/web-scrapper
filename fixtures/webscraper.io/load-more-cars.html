@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  Hand-authored fixture mirroring the markup structure observed at
+  https://webscraper.io/test-sites/load-more on 2026-10-11.
+
+  Written rather than captured, per fixtures/README.md. That host carries no personal data and
+  expressly invites scraping, so a capture would be harmless here — but the no-captures rule is
+  valuable precisely because it needs no case-by-case judgement, and a hand-authored fixture can
+  additionally express failure cases (a card with no year, a bad mileage) that a real page will
+  not contain on demand.
+
+  Structure being mirrored:
+    - itemscope itemtype="https://schema.org/Product"   (Product, NOT Car/Vehicle)
+    - itemprop name        -> "Make Model Year" in one string
+    - itemprop description -> editorial copy
+    - itemprop price       -> "USD 228 511"   (currency inside the text, space separators)
+    - meta itemprop priceCurrency
+    - <p class="card-text"><b>Year: </b> 1955
+    - <p class="card-text"><b>Mileage: </b> 104 338 km
+    - detail links point at /test-sites/product/... which robots.txt DISALLOWS
+-->
+<html lang="en">
+<head><title>Test site with load more button | Web Scraper Test Sites</title></head>
+<body>
+<div class="row">
+
+  <div class="col-md-4">
+    <div class="card" itemscope itemtype="https://schema.org/Product">
+      <div class="card-head">
+        <a class="card-head-url" href="https://webscraper.io/test-sites/product/mercedes-benz-w123-280e-1955-c001">
+          <img class="image" alt="item" src="/images/test-sites-cars/mb-w123-thumbnail.avif" itemprop="image">
+        </a>
+        <div class="availability"><div class="badge">Available: 1</div></div>
+      </div>
+      <div class="card-body">
+        <h3 class="card-title" title="Mercedes-Benz W123 280E 1955" itemprop="name">
+          <a href="https://webscraper.io/test-sites/product/mercedes-benz-w123-280e-1955-c001">
+            Mercedes-Benz W123 280E 1955
+          </a>
+        </h3>
+        <p class="description text-muted" itemprop="description">Uncompromising Stuttgart saloon</p>
+        <p class="card-text"><b>Year: </b> 1955</p>
+        <p class="card-text"><b>Country of origin: </b> United Kingdom</p>
+        <p class="card-text"><b>Mileage: </b> 104 338 km</p>
+      </div>
+      <div class="card-footer row">
+        <div class="col-6 rarity-rating" data-rating="3"></div>
+        <p class="price col-6">
+          <span itemprop="price">USD 228 511</span>
+          <meta itemprop="priceCurrency" content="USD">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card" itemscope itemtype="https://schema.org/Product">
+      <div class="card-body">
+        <h3 class="card-title" title="BMW E24 635CSi 1954" itemprop="name">
+          <a href="https://webscraper.io/test-sites/product/bmw-e24-635csi-1954-c002">BMW E24 635CSi 1954</a>
+        </h3>
+        <p class="description text-muted" itemprop="description">Bavarian grand tourer</p>
+        <p class="card-text"><b>Year: </b> 1954</p>
+        <p class="card-text"><b>Country of origin: </b> Germany</p>
+        <p class="card-text"><b>Mileage: </b> 88 010 km</p>
+      </div>
+      <div class="card-footer row">
+        <p class="price col-6">
+          <span itemprop="price">USD 149 900</span>
+          <meta itemprop="priceCurrency" content="USD">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card" itemscope itemtype="https://schema.org/Product">
+      <div class="card-body">
+        <h3 class="card-title" title="Jaguar XJ6 1983" itemprop="name">
+          <a href="https://webscraper.io/test-sites/product/jaguar-xj6-1983-c003">Jaguar XJ6 1983</a>
+        </h3>
+        <p class="description text-muted" itemprop="description">Coventry comfort</p>
+        <p class="card-text"><b>Year: </b> 1983</p>
+        <p class="card-text"><b>Mileage: </b> 132 500 mi</p>
+      </div>
+      <div class="card-footer row">
+        <p class="price col-6">
+          <span itemprop="price">GBP 18 250</span>
+          <meta itemprop="priceCurrency" content="GBP">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure case: no year anywhere. Must be reported as schema-drift, never stored. -->
+  <div class="col-md-4">
+    <div class="card" itemscope itemtype="https://schema.org/Product">
+      <div class="card-body">
+        <h3 class="card-title" itemprop="name"><a href="#">Ferrari F40</a></h3>
+        <p class="description text-muted" itemprop="description">Maranello icon</p>
+        <p class="card-text"><b>Mileage: </b> 9 400 km</p>
+      </div>
+      <div class="card-footer row">
+        <p class="price col-6">
+          <span itemprop="price">USD 2 400 000</span>
+          <meta itemprop="priceCurrency" content="USD">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Failure case: implausible mileage. Must be validation-range, never silently clamped. -->
+  <div class="col-md-4">
+    <div class="card" itemscope itemtype="https://schema.org/Product">
+      <div class="card-body">
+        <h3 class="card-title" itemprop="name"><a href="#">Nissan 300ZX Z31 1966</a></h3>
+        <p class="card-text"><b>Year: </b> 1966</p>
+        <p class="card-text"><b>Mileage: </b> 99 999 999 km</p>
+      </div>
+      <div class="card-footer row">
+        <p class="price col-6">
+          <span itemprop="price">USD 31 000</span>
+          <meta itemprop="priceCurrency" content="USD">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- A non-car Product on the same page: must not be confused for a listing card. -->
+  <div itemscope itemtype="https://schema.org/SiteNavigationElement">
+    <a itemprop="url" href="/test-sites"><span itemprop="name">Test Sites</span></a>
+  </div>
+
+</div>
+</body>
+</html>

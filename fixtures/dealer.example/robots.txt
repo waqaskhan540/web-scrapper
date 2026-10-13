@@ -1,0 +1,11 @@
+User-agent: *
+Crawl-delay: 1
+Disallow: /admin/
+Disallow: /private/
+
+User-agent: CarIngestBot
+Crawl-delay: 1
+Allow: /listing/
+Disallow: /listing/draft/
+
+Sitemap: http://localhost:8099/sitemap.xml

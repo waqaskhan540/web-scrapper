@@ -1,0 +1,16 @@
+# Literal strings present in seller-pii-present.html that must NEVER appear in a persisted
+# record, a serialized API response, or a log line. Consumed by PiiContainmentTests and
+# PiiGoldenListTests. One value per line; blank lines and # comments ignored.
+Jonathan Pemberton-Hayes
+Jonathan
+Pemberton
+jonathan.pemberton@seller-mailbox.example
+seller-mailbox.example
+07700 900461
+07700900461
++44 7700 900461
++447700900461
+14 Alder Crescent
+Alder Crescent
+Leamington Spa
+CV32 5AB

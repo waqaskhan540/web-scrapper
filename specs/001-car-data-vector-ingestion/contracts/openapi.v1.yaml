@@ -1,0 +1,404 @@
+openapi: 3.1.0
+info:
+  title: Car Data Vector Ingestion — Control API
+  version: 1.0.0
+  description: >-
+    Operator control surface for ingesting car-listing pages into a semantic store.
+    Narrative contract and rationale: ./ingestion-api.v1.md
+    Entity semantics: ../data-model.md
+servers:
+  - url: /v1
+
+paths:
+  /runs:
+    post:
+      summary: Start an ingestion run
+      operationId: startRun
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StartRunRequest' }
+      responses:
+        '202':
+          description: Run queued
+          headers:
+            Location:
+              schema: { type: string, format: uri-reference }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunSummary' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409':
+          description: A run is already active for this source
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/Problem' }
+
+  /runs/{id}:
+    get:
+      summary: Get a run's status and totals
+      operationId: getRun
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunSummary' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /runs/{id}/outcomes:
+    get:
+      summary: List per-address outcomes for a run
+      operationId: listRunOutcomes
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - name: outcome
+          in: query
+          required: false
+          schema: { $ref: '#/components/schemas/Outcome' }
+        - { name: cursor, in: query, required: false, schema: { type: string } }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+      responses:
+        '200':
+          description: Outcome page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OutcomePage' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /documents/{id}:
+    get:
+      summary: Get a stored car document with provenance
+      operationId: getDocument
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CarDocumentResponse' }
+        '404': { $ref: '#/components/responses/Problem' }
+
+  /query:
+    post:
+      summary: Validation query — operator and test use only, not a consumer search contract
+      description: >-
+        Proves stored vectors are retrievable by meaning (FR-028). modelId and modelVersion are
+        REQUIRED: pgvector will compare vectors from different models without error, so the
+        contract refuses to make the dangerous call the easy one (FR-029).
+      operationId: validationQuery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/QueryRequest' }
+      responses:
+        '200':
+          description: Query ran; results may be empty
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QueryResponse' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '422':
+          description: No embeddings exist for the requested model identity
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '503': { $ref: '#/components/responses/Problem' }
+
+  /health:
+    get:
+      summary: Health and per-source freshness
+      operationId: getHealth
+      responses:
+        '200':
+          description: Healthy or degraded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+        '503':
+          description: Unhealthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HealthResponse' }
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem detail
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    Problem:
+      type: object
+      required: [title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string }
+        status: { type: integer }
+        detail:
+          type: string
+          description: Identifiers and status only — never page content (Principle I-4).
+        instance: { type: string }
+
+    StartRunRequest:
+      type: object
+      required: [sourceId]
+      additionalProperties: false
+      properties:
+        sourceId: { type: string, format: uuid }
+        retryOfRunId:
+          type: [string, 'null']
+          format: uuid
+          description: When set, processes only that run's failed addresses (FR-021).
+
+    RunStatus:
+      type: string
+      enum: [running, succeeded, failed, interrupted]
+
+    Outcome:
+      type: string
+      enum: [stored, unchanged, skipped-by-policy, failed]
+
+    ReasonCode:
+      type: string
+      description: Closed set — see ../data-model.md#reason-codes
+      enum:
+        - robots-disallowed
+        - robots-unavailable
+        - no-host-policy
+        - auth-required
+        - malformed-address
+        - fetch-timeout
+        - fetch-http-error
+        - rate-limited-persistently
+        - content-too-large
+        - jsonld-absent
+        - jsonld-malformed
+        - schema-drift
+        - validation-range
+        - js-render-required
+        - not-a-car-page
+        - embedding-unavailable
+        - page-gone
+
+    RunTotals:
+      type: object
+      required: [addressesRead, stored, unchanged, skippedByPolicy, failed, requestCount]
+      additionalProperties: false
+      description: >-
+        At terminal status, addressesRead == stored + unchanged + skippedByPolicy + failed.
+      properties:
+        addressesRead: { type: integer, minimum: 0 }
+        stored: { type: integer, minimum: 0 }
+        unchanged: { type: integer, minimum: 0 }
+        skippedByPolicy: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        requestCount: { type: integer, minimum: 0 }
+
+    RunSummary:
+      type: object
+      required: [id, sourceId, status, triggeredBy, startedAt, filesRead, totals]
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        sourceId: { type: string, format: uuid }
+        status: { $ref: '#/components/schemas/RunStatus' }
+        triggeredBy: { type: string, enum: [operator, retry] }
+        retryOfRunId: { type: [string, 'null'], format: uuid }
+        startedAt: { type: string, format: date-time }
+        completedAt: { type: [string, 'null'], format: date-time }
+        filesRead:
+          type: array
+          items: { type: string }
+        totals: { $ref: '#/components/schemas/RunTotals' }
+
+    AddressOutcomeItem:
+      type: object
+      required: [url, outcome, attemptCount, recordedAt]
+      additionalProperties: false
+      properties:
+        url: { type: string, format: uri }
+        outcome: { $ref: '#/components/schemas/Outcome' }
+        reasonCode:
+          oneOf:
+            - { $ref: '#/components/schemas/ReasonCode' }
+            - { type: 'null' }
+          description: Non-null whenever outcome is not 'stored' or 'unchanged' (FR-020).
+        message:
+          type: [string, 'null']
+          description: Advisory; may change without a version bump. Carries no page content.
+        attemptCount: { type: integer, minimum: 1 }
+        recordedAt: { type: string, format: date-time }
+        documentId: { type: [string, 'null'], format: uuid }
+
+    OutcomePage:
+      type: object
+      required: [runId, items]
+      additionalProperties: false
+      properties:
+        runId: { type: string, format: uuid }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AddressOutcomeItem' }
+        nextCursor:
+          type: [string, 'null']
+          description: Opaque. Cursor paging so a 10k-address run is walkable stably.
+
+    Mileage:
+      type: object
+      required: [value, unit]
+      additionalProperties: false
+      properties:
+        value: { type: integer, minimum: 0, maximum: 1000000 }
+        unit: { type: string, enum: [mi, km] }
+
+    Price:
+      type: object
+      required: [amount, currency]
+      additionalProperties: false
+      properties:
+        amount:
+          type: string
+          description: Decimal as a string — avoids float rounding on currency.
+          pattern: '^[0-9]+\.[0-9]{2}$'
+        currency: { type: string, minLength: 3, maxLength: 3 }
+
+    Vehicle:
+      type: object
+      required: [make, model, year]
+      additionalProperties: false
+      description: >-
+        Allowlisted non-personal fields only. There is no description, seller, or contact field
+        anywhere in this schema — v1 stores none (Principle I-4).
+      properties:
+        make: { type: string }
+        model: { type: string }
+        year: { type: integer, minimum: 1900 }
+        trim: { type: [string, 'null'] }
+        mileage:
+          oneOf:
+            - { $ref: '#/components/schemas/Mileage' }
+            - { type: 'null' }
+        price:
+          oneOf:
+            - { $ref: '#/components/schemas/Price' }
+            - { type: 'null' }
+        fuelType: { type: [string, 'null'] }
+        transmission: { type: [string, 'null'] }
+        bodyStyle: { type: [string, 'null'] }
+        colour: { type: [string, 'null'] }
+        vin: { type: [string, 'null'], minLength: 17, maxLength: 17 }
+
+    Provenance:
+      type: object
+      required: [sourceUrl, retrievedAt, extractorVersion, discoveryMethod, lastVerifiedAt]
+      additionalProperties: false
+      description: >-
+        Fully required. A document cannot exist without provenance (FR-015), so there is no
+        "provenance unknown" representation to serve.
+      properties:
+        sourceUrl: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        extractorVersion: { type: string }
+        discoveryMethod:
+          type: string
+          description: Open set (FR-015a); 'operator-file' in v1.
+        lastVerifiedAt: { type: string, format: date-time }
+
+    EmbeddingDescriptor:
+      type: object
+      required: [modelId, modelVersion, embeddedAt]
+      additionalProperties: false
+      description: Model identity only. The vector is never exposed.
+      properties:
+        modelId: { type: string }
+        modelVersion:
+          type: string
+          description: Resolved digest, not a mutable tag (FR-014).
+        embeddedAt: { type: string, format: date-time }
+
+    CarDocumentResponse:
+      type: object
+      required: [id, vehicle, availability, provenance, embeddings]
+      additionalProperties: false
+      properties:
+        id: { type: string, format: uuid }
+        vehicle: { $ref: '#/components/schemas/Vehicle' }
+        availability: { type: string, enum: [available, unavailable] }
+        detectedLanguage: { type: [string, 'null'] }
+        provenance: { $ref: '#/components/schemas/Provenance' }
+        embeddings:
+          type: array
+          items: { $ref: '#/components/schemas/EmbeddingDescriptor' }
+
+    QueryRequest:
+      type: object
+      required: [text, modelId, modelVersion]
+      additionalProperties: false
+      properties:
+        text: { type: string, minLength: 1, maxLength: 2000 }
+        modelId: { type: string, minLength: 1 }
+        modelVersion: { type: string, minLength: 1 }
+        limit: { type: integer, minimum: 1, maximum: 100, default: 10 }
+
+    QueryResult:
+      type: object
+      required: [documentId, sourceUrl, retrievedAt, distance]
+      additionalProperties: false
+      properties:
+        documentId: { type: string, format: uuid }
+        sourceUrl: { type: string, format: uri }
+        retrievedAt: { type: string, format: date-time }
+        distance:
+          type: number
+          description: Raw metric, ascending (nearest first). Not a normalized score.
+
+    QueryResponse:
+      type: object
+      required: [modelId, modelVersion, results]
+      additionalProperties: false
+      properties:
+        modelId: { type: string }
+        modelVersion: { type: string }
+        results:
+          type: array
+          description: Confined to the requested model identity; never mixed (FR-029).
+          items: { $ref: '#/components/schemas/QueryResult' }
+
+    SourceHealth:
+      type: object
+      required: [sourceId, location, lastSuccessfulRunAt]
+      additionalProperties: false
+      properties:
+        sourceId: { type: string, format: uuid }
+        location: { type: string }
+        lastSuccessfulRunAt:
+          type: [string, 'null']
+          format: date-time
+          description: Null until a first success. Detects a quietly stalled source (gate II-5).
+        activeRunId: { type: [string, 'null'], format: uuid }
+
+    HealthResponse:
+      type: object
+      required: [status, checks, sources]
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [healthy, degraded, unhealthy] }
+        checks:
+          type: object
+          additionalProperties: { type: string, enum: [healthy, degraded, unhealthy] }
+        sources:
+          type: array
+          items: { $ref: '#/components/schemas/SourceHealth' }

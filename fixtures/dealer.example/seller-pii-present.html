@@ -1,0 +1,71 @@
+<!doctype html>
+<!--
+  The decisive PII fixture. Seller identity appears in six places: a JSON-LD seller object, a
+  JSON-LD description, meta tags, visible markup, a microdata block, and a data- attribute.
+  PiiContainmentTests asserts that NONE of the literal strings below survive into the stored
+  record. All values are invented; the phone number is in Ofcom's reserved drama range and the
+  domain is .example, so nothing here can reach a real person.
+-->
+<html lang="en-GB">
+<head>
+  <title>2016 Mazda 6 — private sale</title>
+  <meta name="author" content="Jonathan Pemberton-Hayes">
+  <meta name="contact" content="jonathan.pemberton@seller-mailbox.example">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Car",
+    "brand": { "@type": "Brand", "name": "Mazda" },
+    "model": "6",
+    "vehicleModelDate": "2016",
+    "bodyType": "Saloon",
+    "color": "Red",
+    "fuelType": "Petrol",
+    "vehicleTransmission": "Manual",
+    "mileageFromOdometer": { "@type": "QuantitativeValue", "value": 62000, "unitCode": "SMI" },
+    "description": "Lovely car, one owner. Call Jonathan on 07700 900461 or email jonathan.pemberton@seller-mailbox.example. Viewings at 14 Alder Crescent, Leamington.",
+    "offers": {
+      "@type": "Offer",
+      "price": "7250.00",
+      "priceCurrency": "GBP",
+      "seller": {
+        "@type": "Person",
+        "name": "Jonathan Pemberton-Hayes",
+        "telephone": "+44 7700 900461",
+        "email": "jonathan.pemberton@seller-mailbox.example",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "14 Alder Crescent",
+          "addressLocality": "Leamington Spa",
+          "postalCode": "CV32 5AB"
+        }
+      }
+    }
+  }
+  </script>
+</head>
+<body>
+  <h1>2016 Mazda 6 Saloon</h1>
+
+  <section class="seller-card" data-seller-phone="07700900461">
+    <h2>Seller: Jonathan Pemberton-Hayes</h2>
+    <p class="tel">Call <a href="tel:+447700900461">07700 900461</a></p>
+    <p class="email"><a href="mailto:jonathan.pemberton@seller-mailbox.example">Email the seller</a></p>
+    <p class="addr">14 Alder Crescent, Leamington Spa, CV32 5AB</p>
+  </section>
+
+  <section itemscope itemtype="https://schema.org/Person">
+    <span itemprop="name">Jonathan Pemberton-Hayes</span>
+    <span itemprop="telephone">+44 7700 900461</span>
+  </section>
+
+  <section class="description">
+    <p>Lovely car, one owner. Call Jonathan on 07700 900461 to arrange a viewing.</p>
+  </section>
+
+  <dl class="specs">
+    <dt>Mileage</dt><dd>62,000 miles</dd>
+    <dt>Price</dt><dd>£7,250</dd>
+  </dl>
+</body>
+</html>

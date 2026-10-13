@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+packages/
+artifacts/
+[Dd]ebug/
+[Rr]elease/
+TestResults/
+
+# Secrets — gate T-6: never commit credentials
+appsettings.*.local.json
+*.env
+.env*
+!.env.example
+
+# Tooling
+.vs/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# Local dev settings with real credentials
+src/CarIngest.Api/appsettings.Development.json

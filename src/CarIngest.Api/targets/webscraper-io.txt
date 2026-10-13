@@ -1,0 +1,11 @@
+# Operator-specified ingestion scope: webscraper.io only.
+#
+# This is the ONE permitted car-listing path on the host. Everything else is either
+# robots-disallowed or is not car data:
+#   /test-sites/load-more/      DISALLOWED (directory and its AJAX endpoint)
+#   /test-sites/product/<slug>  DISALLOWED (per-car detail pages)
+#   /test-sites/e-commerce/*    allowed, but laptops and phones, not cars
+#
+# All six cars are in the served HTML of this page, so no JavaScript and no pagination are
+# needed. See specs/001-car-data-vector-ingestion/r1-findings.md.
+https://webscraper.io/test-sites/load-more
